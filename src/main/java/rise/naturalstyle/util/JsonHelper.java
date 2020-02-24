@@ -62,64 +62,10 @@ public class JsonHelper {
         }
     }
 
-    private void generateSimpleBlockState(Block block)
-    {
-        String filePath;
-        File json = null;
-        boolean find = false;
-
-        try
-        {
-            Path path = Paths.get(basePath);
-            path.normalize();
-
-            if(block != null)
-            {
-                filePath = path.toString() + "\\assets\\" + this.modID + "\\blockstates\\";
-
-                json = new File(filePath + block.getUnlocalizedName().substring(5) + ".json");
-
-                if(json.exists())
-                {
-                    find = true;
-                    LogHelper.debugInfoLog("Block state file is found. " + json.getName());
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
-
-        if(!find && block != null)
-        {
-            try
-            {
-                assert json != null;
-                if(json.getParentFile() != null)
-                {
-                    json.getParentFile().mkdirs();
-                }
-
-                PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(json.getPath())));
-
-                String output = "{\n" +
-                        "    \"variants\": {\n" +
-                        "        \"normal\": { \"model\": \"" + this.modID + ":" + block.getUnlocalizedName().substring(5) + "\" }\n" +
-                        "    }\n" +
-                        "}";
-                pw.println(output);
-                pw.close();
-
-                LogHelper.debugInfoLog("Successful wrote of block state. Please restart client. " + json.getPath());
-            }
-            catch(IOException e)
-            {
-                LogHelper.warnLog("Failed to register block state. " + json.getName());
-            }
-        }
-    }
-
+    /**
+     * 旧式のアイテムのJson自動生成メソッド 参照用に置いてあるが削除予定
+     */
+    @Deprecated
     private void generateSimpleItemJson(Item item)
     {
         String filePath;
@@ -180,7 +126,12 @@ public class JsonHelper {
         }
     }
 
-
+    /**
+     * Jsonを自動生成する。ブロックステートや基本的なモデルに加え、アクシスブロック、トップボトムブロックに対応
+     * @param type タイプ
+     * @param target BlockかItem
+     * @param fileName 'getUnlocalizedName.substring(5)' が基本
+     */
     private void generateJson(JsonType type, Object target, String fileName)
     {
         String filePath = null;
@@ -253,6 +204,27 @@ public class JsonHelper {
 
                 if(type == JsonType.SIMPLE_BLOCK)
                     output = this.getParentText("block/cube_all", "all", fileName);
+
+                if(type == JsonType.AXIS_BLOCK)
+                    output = "{\n" +
+                            "    \"parent\": \"block/cube_column\",\n" +
+                            "    \"textures\": {\n" +
+                            "        \"end\":\"" + this.modID + ":" + fileName + "_top" + "\",\n" +
+                            "        \"side\":\"" + this.modID + ":" + fileName + "_side" + "\"\n" +
+                            "    }\n" +
+                            "}\n";
+
+                if(type == JsonType.TOP_BOTTOM_BLOCK)
+                    output = "{\n" +
+                            "    \"parent\": \"block/cube_bottom_top\",\n" +
+                            "    \"textures\": {\n" +
+                            "        \"top\":\"" + this.modID + ":" + fileName + "_top" + "\",\n" +
+                            "        \"side\":\"" + this.modID + ":" + fileName + "_side" + "\",\n" +
+                            "        \"bottom\":\"" + this.modID + ":" + fileName + "_bottom" + "\"\n" +
+                            "    }\n" +
+                            "}\n";
+
+
 
                 pw.println(output);
                 pw.close();
