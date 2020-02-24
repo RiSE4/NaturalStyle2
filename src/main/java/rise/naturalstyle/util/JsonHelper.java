@@ -9,6 +9,11 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * 自動でBlockStateやModelのJsonを生成します。ある程度のシンプルな物に限り完全自動化が可能です。
+ * 一部のソースコードを参考にさせていただきました。:: https://github.com/defeatedcrow/HeatAndClimateLib
+ * @author RiSE4
+ */
 public class JsonHelper {
 
     private final String basePath;
@@ -40,8 +45,9 @@ public class JsonHelper {
 
         if(this.isDebug)
         {
-//            this.generateJsonSimple(block);
-            this.generateSimpleBlockState(block);
+            this.generateJson(JsonType.BLOCK_STATE, block, block.getUnlocalizedName().substring(5));
+            this.generateJson(JsonType.SIMPLE_BLOCK, block, block.getUnlocalizedName().substring(5));
+            this.generateJson(JsonType.ITEM_BLOCK, block, block.getUnlocalizedName().substring(5));
         }
     }
 
@@ -116,7 +122,7 @@ public class JsonHelper {
 
     private void generateSimpleItemJson(Item item)
     {
-        String filePath = null;
+        String filePath;
         File json = null;
         boolean find = false;
 
@@ -174,10 +180,122 @@ public class JsonHelper {
         }
     }
 
+
+    private void generateJson(JsonType type, Object target, String fileName)
+    {
+        String filePath = null;
+        File json = null;
+        boolean find = false;
+
+        try
+        {
+            Path path = Paths.get(basePath);
+            path.normalize();
+
+            if(target != null)
+            {
+                String rePath = path.toString() + "\\assets\\" + this.modID;
+
+                if(type == JsonType.BLOCK_STATE)
+                    filePath = rePath + "\\blockstates\\";
+
+                if(type == JsonType.SIMPLE_BLOCK || type == JsonType.AXIS_BLOCK || type == JsonType.TOP_BOTTOM_BLOCK)
+                    filePath = rePath + "\\models\\block\\";
+
+                if(type == JsonType.SIMPLE_ITEM || type == JsonType.TOOL_ITEM || type == JsonType.ITEM_BLOCK)
+                    filePath = rePath + "\\models\\item\\";
+                
+                json = new File(filePath + fileName + ".json");
+
+                if(json.exists())
+                {
+                    find = true;
+                    LogHelper.debugInfoLog(type.getLogName() + " file is found. :: " + json.getName());
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LogHelper.debugTrace(e.toString());
+        }
+
+        if(!find && target != null)
+        {
+            try
+            {
+                assert json != null;
+                if (json.getParentFile() != null)
+                {
+                    json.getParentFile().mkdirs();
+                }
+
+                PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(json.getPath())));
+
+                String output = "";
+
+                if(type == JsonType.BLOCK_STATE)
+                    output = "{\n" +
+                            "    \"variants\": {\n" +
+                            "        \"normal\": { \"model\": \"" + this.modID + ":" + fileName + "\" }\n" +
+                            "    }\n" +
+                            "}";
+
+                if(type == JsonType.ITEM_BLOCK)
+                    output = "{\n" +
+                            "    \"parent\": \"" + this.modID + ":" + "block/" + fileName + "\"\n" +
+                            "}\n";
+
+                if(type == JsonType.SIMPLE_ITEM)
+                    output = this.getParentText("item/generated", "layer0", fileName);
+
+                if(type == JsonType.TOOL_ITEM)
+                    output = this.getParentText("item/handheld", "layer0", fileName);
+
+                if(type == JsonType.SIMPLE_BLOCK)
+                    output = this.getParentText("block/cube_all", "all", fileName);
+
+                pw.println(output);
+                pw.close();
+
+                LogHelper.debugInfoLog("Successful wrote of " + type.getLogName() + ". Please restart client. :: " + json.getPath());
+            }
+            catch (IOException e)
+            {
+                LogHelper.warnLog("Failed to register " + type.getLogName() + ". :: " + json.getName());
+            }
+        }
+    }
+
+    private String getParentText(String parentName, String layerName, String fileName)
+    {
+        return "{\n" +
+                "    \"parent\": \"" + parentName + "\",\n" +
+                "    \"textures\": {\n" +
+                "        \"" + layerName + "\": \"" + this.modID + ":" + fileName + "\"\n" +
+                "    }\n" +
+                "}";
+    }
+
     private enum JsonType
     {
-        BLOCK_STATE,
-        SIMPLE_ITEM,
-        SIMPLE_BLOCK;
+        BLOCK_STATE("Block State"),
+        ITEM_BLOCK("Item Block Model"),
+        SIMPLE_ITEM("Simple Item Model"),
+        TOOL_ITEM("Tool Item Model"),
+        SIMPLE_BLOCK("Simple Block Model"),
+        AXIS_BLOCK("Axis Block Model"),
+        TOP_BOTTOM_BLOCK("Top Bottom Block Model");
+
+        private final String logName;
+
+        JsonType(String logName)
+        {
+            this.logName = logName;
+        }
+
+        public String getLogName()
+        {
+            return this.logName;
+        }
     }
 }
