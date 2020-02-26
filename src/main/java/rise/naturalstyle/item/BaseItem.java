@@ -24,7 +24,7 @@ public class BaseItem extends Item implements IContent {
     public void registerModels()
     {
         NaturalStyle.proxy.registerItemModel(this, 0);
-        JsonHelper.INSTANCE.registerItemJson(this);
+        JsonHelper.INSTANCE.registerJson(this, JsonHelper.JsonType.SIMPLE_ITEM, this.getUnlocalizedName());
     }
 
     public BaseItem register()

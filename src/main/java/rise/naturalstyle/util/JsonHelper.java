@@ -10,9 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * 自動でBlockStateやModelのJsonを生成します。ある程度のシンプルな物に限り完全自動化が可能です。
- * 一部のソースコードを参考にさせていただきました。:: https://github.com/defeatedcrow/HeatAndClimateLib
- * @author RiSE4
+ * 自動でBlockStateやModelのJsonを生成します。バニラにペアレントモデルがあるブロックに限り完全自動化が可能です。
+ * 一部のソースコードを参考にさせていただきました。ありがとうございます！:: https://github.com/defeatedcrow/HeatAndClimateLib
  */
 public class JsonHelper {
 
@@ -20,45 +19,35 @@ public class JsonHelper {
     private boolean isDebug = NaturalConfig.DEBUG_MODE;
     private String modID = NaturalStyle.MOD_ID;
 
-    public JsonHelper(String path)
+    private JsonHelper(String path)
     {
         this.basePath = path;
     }
 
+    /** Modのリソースファイルのパスをコピペ*/
     public static final JsonHelper INSTANCE = new JsonHelper("D:\\IDEA\\1.12.2_forge2847\\NaturalStyle2\\src\\main\\resources");
 
-    public void registerJson(Object target, JsonType type)
+    /**
+     * デバッグ時に限りJsonを自動生成する。各コンテンツのコンストラクタなどで呼び出すと使える。
+     * @param target BlockかItem
+     * @param type Jsonの種類
+     * @param name ファイルの名前 わかりやすいようにgetUnlocalizedName()の使用を推奨
+     */
+    public void registerJson(Object target, JsonType type, String name)
     {
-        if(target != null)
-            return;
-
-        if(this.isDebug)
+        if (this.isDebug)
         {
-            /* ここに処理を書く */
-        }
-    }
+            if (target instanceof Block)
+            {
+                Block block = (Block) target;
+                this.generateJson(type, block, block.getUnlocalizedName().substring(5));
+            }
 
-    public void registerBlockJson(Block block)
-    {
-        if(block == null)
-            return;
-
-        if(this.isDebug)
-        {
-            this.generateJson(JsonType.BLOCK_STATE, block, block.getUnlocalizedName().substring(5));
-            this.generateJson(JsonType.SIMPLE_BLOCK, block, block.getUnlocalizedName().substring(5));
-            this.generateJson(JsonType.ITEM_BLOCK, block, block.getUnlocalizedName().substring(5));
-        }
-    }
-
-    public void registerItemJson(Item item)
-    {
-        if(item == null)
-            return;
-
-        if(this.isDebug)
-        {
-//            this.generateJsonSimple(item);
+            if (target instanceof Item)
+            {
+                Item item = (Item) target;
+                this.generateJson(type, item, item.getUnlocalizedName().substring(5));
+            }
         }
     }
 
@@ -127,10 +116,11 @@ public class JsonHelper {
     }
 
     /**
-     * Jsonを自動生成する。ブロックステートや基本的なモデルに加え、アクシスブロック、トップボトムブロックに対応
-     * @param type タイプ
+     * BlockStateまたはModelのJsonを自動生成する。
+     * テキストでゴリ押しで書いているのでもっといい方法があるかも。
+     * @param type Jsonの種類
      * @param target BlockかItem
-     * @param fileName 'getUnlocalizedName.substring(5)' が基本
+     * @param fileName ファイル名
      */
     private void generateJson(JsonType type, Object target, String fileName)
     {
@@ -147,10 +137,10 @@ public class JsonHelper {
             {
                 String rePath = path.toString() + "\\assets\\" + this.modID;
 
-                if(type == JsonType.BLOCK_STATE)
+                if(type == JsonType.SIMPLE_BLOCK_STATE || type == JsonType.FACING_BLOCK_STATE)
                     filePath = rePath + "\\blockstates\\";
 
-                if(type == JsonType.SIMPLE_BLOCK || type == JsonType.AXIS_BLOCK || type == JsonType.TOP_BOTTOM_BLOCK)
+                if(type == JsonType.SIMPLE_BLOCK || type == JsonType.AXIS_BLOCK || type == JsonType.TOP_BOTTOM_BLOCK || type == JsonType.FACING_BLOCK)
                     filePath = rePath + "\\models\\block\\";
 
                 if(type == JsonType.SIMPLE_ITEM || type == JsonType.TOOL_ITEM || type == JsonType.ITEM_BLOCK)
@@ -184,12 +174,22 @@ public class JsonHelper {
 
                 String output = "";
 
-                if(type == JsonType.BLOCK_STATE)
+                if(type == JsonType.SIMPLE_BLOCK_STATE)
                     output = "{\n" +
                             "    \"variants\": {\n" +
                             "        \"normal\": { \"model\": \"" + this.modID + ":" + fileName + "\" }\n" +
                             "    }\n" +
                             "}";
+
+                if(type == JsonType.FACING_BLOCK_STATE)
+                    output = "{\n" +
+                            "    \"variants\": {\n" +
+                            "        \"facing=north\": { \"model\": \"" + this.modID + ":" + fileName + "\" },\n" +
+                            "        \"facing=south\": { \"model\": \"" + this.modID + ":" + fileName + "\", \"y\": 180 },\n" +
+                            "        \"facing=west\":  { \"model\": \"" + this.modID + ":" + fileName + "\", \"y\": 270 },\n" +
+                            "        \"facing=east\":  { \"model\": \"" + this.modID + ":" + fileName + "\", \"y\": 90 }\n" +
+                            "    }\n" +
+                            "}\n";
 
                 if(type == JsonType.ITEM_BLOCK)
                     output = "{\n" +
@@ -224,7 +224,15 @@ public class JsonHelper {
                             "    }\n" +
                             "}\n";
 
-
+                if(type == JsonType.FACING_BLOCK)
+                    output = "{\n" +
+                            "    \"parent\": \"block/orientable\",\n" +
+                            "    \"textures\": {\n" +
+                            "        \"top\": \"" + this.modID + ":" + fileName + "_top" + "\",\n" +
+                            "        \"front\": \"" + this.modID + ":" + fileName + "_front" + "\",\n" +
+                            "        \"side\": \"" + this.modID + ":" + fileName + "_side" + "\"\n" +
+                            "    }\n" +
+                            "}\n";
 
                 pw.println(output);
                 pw.close();
@@ -248,15 +256,20 @@ public class JsonHelper {
                 "}";
     }
 
-    private enum JsonType
+    /**
+     * Jsonの種類 引数はログを表示する際にのみ使用し、enumごとの処理は generateJson(...)でやっている。
+     */
+    public enum JsonType
     {
-        BLOCK_STATE("Block State"),
+        SIMPLE_BLOCK_STATE("Simple Block State"),
+        FACING_BLOCK_STATE("Facing Block State"),
         ITEM_BLOCK("Item Block Model"),
         SIMPLE_ITEM("Simple Item Model"),
         TOOL_ITEM("Tool Item Model"),
         SIMPLE_BLOCK("Simple Block Model"),
         AXIS_BLOCK("Axis Block Model"),
-        TOP_BOTTOM_BLOCK("Top Bottom Block Model");
+        TOP_BOTTOM_BLOCK("Top Bottom Block Model"),
+        FACING_BLOCK("Facing Block Model");
 
         private final String logName;
 

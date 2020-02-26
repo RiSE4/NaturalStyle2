@@ -22,7 +22,9 @@ public class BlockAuroraOre extends BaseBlock {
         super(name, Material.ROCK, SoundType.STONE, 3.5F, 10F);
         this.setHarvestLevel(ToolType.PICKAXE, 3);
         this.register();
-        JsonHelper.INSTANCE.registerBlockJson(this);
+        JsonHelper.INSTANCE.registerJson(this, JsonHelper.JsonType.SIMPLE_BLOCK_STATE, this.getUnlocalizedName());
+        JsonHelper.INSTANCE.registerJson(this, JsonHelper.JsonType.SIMPLE_BLOCK, this.getUnlocalizedName());
+        JsonHelper.INSTANCE.registerJson(this, JsonHelper.JsonType.ITEM_BLOCK, this.getUnlocalizedName());
     }
 
     public Item getItemDropped(IBlockState state, Random random, int fortune)
