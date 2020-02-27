@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 public class JsonHelper {
 
     private final String basePath;
+
     private boolean isDebug = NaturalConfig.DEBUG_MODE;
     private String modID = NaturalStyle.MOD_ID;
 
@@ -40,13 +41,13 @@ public class JsonHelper {
             if (target instanceof Block)
             {
                 Block block = (Block) target;
-                this.generateJson(type, block, block.getUnlocalizedName().substring(5));
+                this.generateJson(type, block, name.substring(5));
             }
 
             if (target instanceof Item)
             {
                 Item item = (Item) target;
-                this.generateJson(type, item, item.getUnlocalizedName().substring(5));
+                this.generateJson(type, item, name.substring(5));
             }
         }
     }
